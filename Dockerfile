@@ -24,9 +24,8 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir apscheduler pytz openpyxl
 
-# Instalar Chromium para Playwright
+# Instalar Chromium para Playwright (deps ya instaladas arriba manualmente)
 RUN playwright install chromium
-RUN playwright install-deps chromium
 
 # Copiar código backend
 COPY backend/ .
