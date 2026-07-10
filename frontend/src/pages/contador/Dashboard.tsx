@@ -240,7 +240,7 @@ export default function Dashboard() {
     if (modo === 'cliente' && filtroCliente)
       return clientes.filter(c => String(c.cliente_id) === filtroCliente)
     if (modo === 'contador' && filtroContador)
-      return clientes.filter(c => c.contador_id != null && String(c.contador_id) === filtroContador)
+      return clientes.filter(c => c.contadores?.some(u => String(u.id) === filtroContador))
     return clientes
   })()
 
