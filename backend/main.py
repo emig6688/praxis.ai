@@ -79,29 +79,6 @@ def health():
     return {"status": "ok", "version": "2.0.0"}
 
 
-# ── Endpoint temporal: subir storage ZIP ─────────────────────────────────────
-from fastapi import UploadFile, File, Header
-import shutil, zipfile, tempfile
-
-@app.post("/api/_migrate/upload-storage")
-async def upload_storage(
-    file: UploadFile = File(...),
-    x_migrate_token: str = Header(...),
-):
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or x_migrate_token != secret:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Forbidden")
-    storage_path = os.getenv("STORAGE_PATH", "./storage")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
-        shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
-    with zipfile.ZipFile(tmp_path, "r") as zf:
-        zf.extractall(storage_path)
-    os.unlink(tmp_path)
-    count = sum(len(files) for _, _, files in os.walk(storage_path))
-    return {"ok": True, "storage_path": storage_path, "files": count}
-
 
 
 # ── Servir frontend React en producción ───────────────────────────────────────
