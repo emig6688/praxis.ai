@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Fuentes Nest ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Gotham';
+  src: url('/fonts/gotham/GothamBold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Gotham';
+  src: url('/fonts/gotham/GothamBlack.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans/OpenSans-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans/OpenSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans/OpenSans-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans/OpenSans-Semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/open-sans/OpenSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── CSS Variables ────────────────────────────────────────────────────────── */
+:root {
+  --nest-navy:      #1D3070;
+  --nest-navy-dark: #162453;
+  --nest-cyan:      #7CC8D8;
+  --nest-cyan-light:#B8E4EC;
+  --shadow-sm:  0 2px 8px 0 rgba(29,48,112,0.08);
+  --shadow-md:  0 4px 20px 0 rgba(29,48,112,0.13);
+  --shadow-lg:  0 8px 40px 0 rgba(29,48,112,0.18);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    @apply bg-slate-50 text-gray-800 antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Gotham', 'Open Sans', system-ui, sans-serif;
+    font-weight: 700;
+  }
+}
+
+/* ── Componentes ──────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* --- Botones --- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-primary-600 hover:bg-primary-700 active:bg-primary-800
+           text-white font-semibold py-2.5 px-5 rounded-xl
+           transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    font-family: 'Gotham', sans-serif;
+    letter-spacing: 0.01em;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover:not(:disabled) { box-shadow: var(--shadow-md); }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-white hover:bg-slate-50 active:bg-slate-100
+           text-primary-600 font-semibold py-2.5 px-5 rounded-xl
+           border border-primary-200 hover:border-primary-300
+           transition-all duration-200;
+    font-family: 'Gotham', sans-serif;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2
+           font-semibold py-2.5 px-5 rounded-xl
+           transition-all duration-200;
+    font-family: 'Gotham', sans-serif;
+    background: var(--nest-cyan);
+    color: var(--nest-navy);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-accent:hover { background: #5aaabf; box-shadow: var(--shadow-md); }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2
+           bg-red-500 hover:bg-red-600 active:bg-red-700
+           text-white font-semibold py-2.5 px-5 rounded-xl
+           transition-all duration-200;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           text-gray-500 hover:text-primary-600 hover:bg-primary-50
+           font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  }
+
+  /* --- Inputs --- */
+  .input {
+    @apply w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm
+           bg-white text-gray-800 placeholder-gray-400
+           focus:outline-none hover:border-gray-300
+           transition-all duration-200;
+  }
+  .input:focus {
+    border-color: var(--nest-cyan);
+    box-shadow: 0 0 0 3px rgba(124, 200, 216, 0.18);
+  }
+
+  /* --- Cards --- */
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 p-6;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
+  }
+  .card-hover {
+    @apply card cursor-pointer hover:border-primary-100;
+  }
+  .card-hover:hover { box-shadow: var(--shadow-md); }
+
+  /* --- Badge --- */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  /* --- Page headings --- */
+  .page-title {
+    font-family: 'Gotham', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    @apply text-2xl;
+    color: var(--nest-navy);
+  }
+
+  .page-subtitle {
+    @apply text-sm text-gray-400 mt-0.5;
+  }
+
+  /* --- Tables --- */
+  .table-nest {
+    @apply w-full;
+  }
+  .table-nest thead th {
+    font-family: 'Gotham', sans-serif;
+    @apply px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-slate-50;
+  }
+  .table-nest tbody tr {
+    @apply border-b border-gray-50 hover:bg-slate-50 transition-colors duration-150;
+  }
+  .table-nest tbody td {
+    @apply px-4 py-3 text-sm text-gray-700;
+  }
+
+  /* --- Stat cards --- */
+  .stat-card {
+    @apply card flex flex-col gap-1;
+  }
+  .stat-label {
+    font-family: 'Gotham', sans-serif;
+    @apply text-xs font-semibold text-gray-400 uppercase tracking-widest;
+  }
+  .stat-value {
+    font-family: 'Gotham', sans-serif;
+    @apply text-2xl font-bold;
+    color: var(--nest-navy);
+  }
+}

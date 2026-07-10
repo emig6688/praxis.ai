@@ -1,0 +1,23 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.env
+*.db
+*.db-journal
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Storage (archivos xlsx descargados, no van al repo)
+backend/storage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

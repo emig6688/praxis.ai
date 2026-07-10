@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # Datos persistentes: DB + archivos xlsx descargados de AFIP
+      - app_data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/contable.db
+      - STORAGE_PATH=/data/storage
+      - SECRET_KEY=${SECRET_KEY}
+      - FERNET_KEY=${FERNET_KEY}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=480
+    restart: unless-stopped
+
+volumes:
+  app_data:
