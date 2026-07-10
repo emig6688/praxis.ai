@@ -79,29 +79,6 @@ def health():
     return {"status": "ok", "version": "2.0.0"}
 
 
-# ── Endpoint temporal de migración de DB (se elimina después del primer uso) ──
-from fastapi import UploadFile, File, Header
-import shutil
-
-@app.post("/api/_migrate/upload-db")
-async def upload_db(
-    file: UploadFile = File(...),
-    x_migrate_token: str = Header(...),
-):
-    secret = os.getenv("SECRET_KEY", "")
-    if not secret or x_migrate_token != secret:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Forbidden")
-    db_url = os.getenv("DATABASE_URL", "sqlite:///./contable.db")
-    db_path = db_url.replace("sqlite:///", "")
-    if not os.path.isabs(db_path):
-        db_path = os.path.abspath(db_path)
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    with open(db_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    size = os.path.getsize(db_path)
-    return {"ok": True, "path": db_path, "bytes": size}
-
 
 # ── Servir frontend React en producción ───────────────────────────────────────
 # Solo si existe la carpeta static/ (generada por el build de Vite)
