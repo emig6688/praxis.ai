@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -195,6 +196,30 @@ def _build_html(
 </html>"""
 
 
+def _send_resend(
+    to_addr: str,
+    subject: str,
+    html: str,
+    plain: str,
+    from_label: str,
+    attachments: list | None = None,
+) -> None:
+    """Envía usando la API de Resend (no usa SMTP — funciona en Railway)."""
+    import resend
+    resend.api_key = os.getenv("RESEND_API_KEY", "")
+    from_email = os.getenv("RESEND_FROM_EMAIL", "Praxis AI <onboarding@resend.dev>")
+    params: dict = {
+        "from": f"{from_label} <{from_email}>" if "<" not in from_email else from_email,
+        "to": [to_addr],
+        "subject": subject,
+        "html": html,
+        "text": plain,
+    }
+    if attachments:
+        params["attachments"] = attachments
+    resend.Emails.send(params)
+
+
 def _send(
     smtp_host: str,
     smtp_port: int,
@@ -204,7 +229,7 @@ def _send(
     to_addr: str,
     msg: MIMEMultipart,
 ) -> None:
-    """Envía el mensaje por SMTP con STARTTLS."""
+    """Envía el mensaje por SMTP con STARTTLS (usado en desarrollo local)."""
     with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
         server.ehlo()
         server.starttls()
@@ -228,9 +253,7 @@ def enviar_reporte_iva(
     smtp_port: int,
     smtp_password: str,
 ) -> None:
-    """Envía el reporte de IVA por email usando las credenciales del estudio."""
-    if not smtp_password:
-        raise ValueError("El estudio no tiene contraseña SMTP configurada")
+    """Envía el reporte de IVA por email."""
     if not from_email:
         raise ValueError("El estudio no tiene email institucional configurado")
 
@@ -244,23 +267,28 @@ def enviar_reporte_iva(
         detalle_ventas=detalle_ventas,
         detalle_compras=detalle_compras,
     )
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Reporte IVA – {periodo_label} | {estudio_nombre}"
-    msg["From"]    = f"{estudio_nombre} <{from_email}>"
-    msg["To"]      = to_email
-    msg.attach(MIMEText(
+    subject = f"Reporte IVA – {periodo_label} | {estudio_nombre}"
+    plain = (
         f"Estimado/a {cliente_nombre},\n\n"
         f"Su posición IVA estimada para {periodo_label}:\n"
         f"  IVA Ventas (Débito): {_ar(iva_ventas)}\n"
         f"  IVA Compras (Crédito): {_ar(iva_compras)}\n"
         f"  Saldo: {_ar(saldo)}\n\n"
-        f"Saludos cordiales,\n{estudio_nombre}",
-        "plain", "utf-8",
-    ))
-    msg.attach(MIMEText(html, "html", "utf-8"))
+        f"Saludos cordiales,\n{estudio_nombre}"
+    )
 
-    _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
+    if os.getenv("RESEND_API_KEY"):
+        _send_resend(to_email, subject, html, plain, estudio_nombre)
+    else:
+        if not smtp_password:
+            raise ValueError("El estudio no tiene contraseña SMTP configurada")
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"{estudio_nombre} <{from_email}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(plain, "plain", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
+        _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
 
 
 def enviar_email_generico(
@@ -275,14 +303,17 @@ def enviar_email_generico(
     smtp_port: int,
     smtp_password: str,
 ) -> None:
-    """Envía un email genérico (usado para el resumen al admin)."""
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"]    = f"{estudio_nombre} <{from_email}>"
-    msg["To"]      = to_email
-    msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
-    _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
+    """Envía un email genérico (resumen al admin)."""
+    if os.getenv("RESEND_API_KEY"):
+        _send_resend(to_email, subject, html, plain, estudio_nombre)
+    else:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = f"{estudio_nombre} <{from_email}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(plain, "plain", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
+        _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
 
 
 def enviar_email_con_adjunto(
@@ -299,24 +330,30 @@ def enviar_email_con_adjunto(
     adjunto_bytes: bytes,
     adjunto_nombre: str,
 ) -> None:
-    """Envía un email con adjunto binario (usado para backups)."""
-    from email.mime.base import MIMEBase
-    from email import encoders as enc
-
-    msg = MIMEMultipart("mixed")
-    msg["Subject"] = subject
-    msg["From"]    = f"{estudio_nombre} <{from_email}>"
-    msg["To"]      = to_email
-
-    alt = MIMEMultipart("alternative")
-    alt.attach(MIMEText(plain, "plain", "utf-8"))
-    alt.attach(MIMEText(html, "html", "utf-8"))
-    msg.attach(alt)
-
-    part = MIMEBase("application", "zip")
-    part.set_payload(adjunto_bytes)
-    enc.encode_base64(part)
-    part.add_header("Content-Disposition", "attachment", filename=adjunto_nombre)
-    msg.attach(part)
-
-    _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
+    """Envía un email con adjunto binario (backups)."""
+    if os.getenv("RESEND_API_KEY"):
+        import base64
+        _send_resend(
+            to_email, subject, html, plain, estudio_nombre,
+            attachments=[{
+                "filename": adjunto_nombre,
+                "content": list(adjunto_bytes),
+            }],
+        )
+    else:
+        from email.mime.base import MIMEBase
+        from email import encoders as enc
+        msg = MIMEMultipart("mixed")
+        msg["Subject"] = subject
+        msg["From"]    = f"{estudio_nombre} <{from_email}>"
+        msg["To"]      = to_email
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(plain, "plain", "utf-8"))
+        alt.attach(MIMEText(html, "html", "utf-8"))
+        msg.attach(alt)
+        part = MIMEBase("application", "zip")
+        part.set_payload(adjunto_bytes)
+        enc.encode_base64(part)
+        part.add_header("Content-Disposition", "attachment", filename=adjunto_nombre)
+        msg.attach(part)
+        _send(smtp_host, smtp_port, from_email, smtp_password, from_email, to_email, msg)
