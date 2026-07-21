@@ -2,6 +2,7 @@
 Endpoints para configurar y consultar el agente nocturno desde el panel admin.
 """
 import json
+import os
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -207,18 +208,25 @@ def test_email(
     from services.email_service import enviar_email_generico
 
     estudio = _get_estudio(current, db)
-    if not estudio.email_institucional or not estudio.smtp_password_enc:
+    if not estudio.email_institucional:
         raise HTTPException(status_code=400, detail="Configurá el correo saliente primero")
 
-    try:
-        smtp_password = decrypt(estudio.smtp_password_enc)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Error al descifrar la contraseña guardada")
+    smtp_password = ""
+    if not os.getenv("RESEND_API_KEY"):
+        if not estudio.smtp_password_enc:
+            raise HTTPException(status_code=400, detail="Configurá la contraseña SMTP primero")
+        try:
+            smtp_password = decrypt(estudio.smtp_password_enc)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Error al descifrar la contraseña guardada")
+
+    # En Resend plan gratuito solo se puede enviar a licgiraudoeg@gmail.com
+    destino = os.getenv("BACKUP_TO_EMAIL", "licgiraudoeg@gmail.com")
 
     try:
         enviar_email_generico(
             from_email=estudio.email_institucional,
-            to_email=current.email,
+            to_email=destino,
             subject=f"[Praxis AI] Prueba de correo — {estudio.nombre}",
             html=f"<p>✅ El correo saliente de <strong>{estudio.nombre}</strong> está configurado correctamente.</p>",
             plain=f"El correo saliente de {estudio.nombre} está configurado correctamente.",
@@ -230,7 +238,7 @@ def test_email(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al enviar: {str(e)}")
 
-    return {"mensaje": f"Email de prueba enviado a {current.email}"}
+    return {"mensaje": f"Email de prueba enviado a {destino}"}
 
 
 # ── GET historial ─────────────────────────────────────────────────────────────
