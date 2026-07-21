@@ -37,16 +37,18 @@ def _guardar_meta(estudio_id: int, info: dict):
         json.dump(info, f)
 
 
+BACKUP_TO_EMAIL = os.getenv("BACKUP_TO_EMAIL", "licgiraudoeg@gmail.com")
+
+
 def ejecutar_backup_estudio(estudio) -> bool:
     """
     Recibe un objeto Estudio SQLAlchemy.
-    Crea un ZIP con la DB SQLite y lo envía al email_institucional.
+    Crea un ZIP con la DB SQLite y lo envía a BACKUP_TO_EMAIL (o email_institucional).
     """
     from services.email_service import enviar_email_con_adjunto
-    from services.crypto_service import decrypt
 
-    if not estudio.email_institucional or not estudio.smtp_password_enc:
-        print(f"[BACKUP] Estudio {estudio.id} sin SMTP configurado, omitiendo.")
+    if not estudio.email_institucional:
+        print(f"[BACKUP] Estudio {estudio.id} sin email institucional, omitiendo.")
         return False
 
     db_url = os.getenv("DATABASE_URL", "sqlite:///./contable.db")
@@ -76,17 +78,24 @@ def ejecutar_backup_estudio(estudio) -> bool:
         with open(zip_path, "rb") as f:
             zip_bytes = f.read()
 
-    try:
-        smtp_password = decrypt(estudio.smtp_password_enc)
-    except Exception as e:
-        print(f"[BACKUP] Error descifrando password estudio {estudio.id}: {e}")
-        return False
+    smtp_password = ""
+    if not os.getenv("RESEND_API_KEY"):
+        from services.crypto_service import decrypt
+        if not estudio.smtp_password_enc:
+            print(f"[BACKUP] Estudio {estudio.id} sin SMTP configurado, omitiendo.")
+            return False
+        try:
+            smtp_password = decrypt(estudio.smtp_password_enc)
+        except Exception as e:
+            print(f"[BACKUP] Error descifrando password estudio {estudio.id}: {e}")
+            return False
 
+    destino = BACKUP_TO_EMAIL
     fecha_display = ahora.strftime("%d/%m/%Y a las %H:%M")
     try:
         enviar_email_con_adjunto(
             from_email=estudio.email_institucional,
-            to_email=estudio.email_institucional,
+            to_email=destino,
             subject=f"[Praxis AI] Backup semanal — {ahora.strftime('%d/%m/%Y')} — {estudio.nombre}",
             html=f"""
                 <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:32px;">
@@ -118,11 +127,11 @@ def ejecutar_backup_estudio(estudio) -> bool:
     meta = {
         "fecha": ahora.isoformat(),
         "fecha_display": fecha_display,
-        "enviado_a": estudio.email_institucional,
+        "enviado_a": destino,
         "tamano_bytes": len(zip_bytes),
     }
     _guardar_meta(estudio.id, meta)
-    print(f"[BACKUP] OK {estudio.nombre} → {estudio.email_institucional}")
+    print(f"[BACKUP] OK {estudio.nombre} → {destino}")
     return True
 
 
@@ -137,7 +146,6 @@ def ejecutar_backup_todos():
         estudios = db.query(models.Estudio).filter(
             models.Estudio.activo == True,
             models.Estudio.email_institucional != None,
-            models.Estudio.smtp_password_enc != None,
         ).all()
         for estudio in estudios:
             ejecutar_backup_estudio(estudio)
