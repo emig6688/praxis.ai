@@ -339,4 +339,4 @@ def ejecutar_backup_manual(
         ejecutar_backup_estudio(estudio)
 
     background_tasks.add_task(_run)
-    return {"mensaje": "Backup iniciado. En caso de necesitarlo consultar con proveedor del servicio."}
+    return {"mensaje": "Backup iniciado, revisar correo electrónico de Administrador."}
