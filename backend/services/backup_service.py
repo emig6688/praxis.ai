@@ -90,7 +90,7 @@ def ejecutar_backup_estudio(estudio) -> bool:
             print(f"[BACKUP] Error descifrando password estudio {estudio.id}: {e}")
             return False
 
-    destino = BACKUP_TO_EMAIL
+    destino = estudio.email_institucional
     fecha_display = ahora.strftime("%d/%m/%Y a las %H:%M")
     try:
         enviar_email_con_adjunto(
@@ -131,7 +131,7 @@ def ejecutar_backup_estudio(estudio) -> bool:
         "tamano_bytes": len(zip_bytes),
     }
     _guardar_meta(estudio.id, meta)
-    print(f"[BACKUP] OK {estudio.nombre} → {destino}")
+    print(f"[BACKUP] OK {estudio.nombre} → {estudio.email_institucional}")
     return True
 
 

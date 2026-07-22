@@ -220,13 +220,10 @@ def test_email(
         except Exception:
             raise HTTPException(status_code=400, detail="Error al descifrar la contraseña guardada")
 
-    # En Resend plan gratuito solo se puede enviar a licgiraudoeg@gmail.com
-    destino = os.getenv("BACKUP_TO_EMAIL", "licgiraudoeg@gmail.com")
-
     try:
         enviar_email_generico(
             from_email=estudio.email_institucional,
-            to_email=destino,
+            to_email=estudio.email_institucional,
             subject=f"[Praxis AI] Prueba de correo — {estudio.nombre}",
             html=f"<p>✅ El correo saliente de <strong>{estudio.nombre}</strong> está configurado correctamente.</p>",
             plain=f"El correo saliente de {estudio.nombre} está configurado correctamente.",
@@ -238,7 +235,7 @@ def test_email(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error al enviar: {str(e)}")
 
-    return {"mensaje": f"Email de prueba enviado a {destino}"}
+    return {"mensaje": f"Email de prueba enviado a {estudio.email_institucional}"}
 
 
 # ── GET historial ─────────────────────────────────────────────────────────────

@@ -202,14 +202,22 @@ def _send_resend(
     html: str,
     plain: str,
     from_label: str,
+    from_addr: str | None = None,
     attachments: list | None = None,
 ) -> None:
     """Envía usando la API de Resend (no usa SMTP — funciona en Railway)."""
     import resend
     resend.api_key = os.getenv("RESEND_API_KEY", "")
-    from_email = os.getenv("RESEND_FROM_EMAIL", "Praxis AI <onboarding@resend.dev>")
+    # Usa el email del estudio si es del dominio verificado, sino usa el default
+    resend_domain = os.getenv("RESEND_FROM_EMAIL", "noreply@praxisinteligencia.com")
+    # Extrae solo el dominio del RESEND_FROM_EMAIL
+    resend_domain_only = resend_domain.split("@")[-1].strip(">") if "@" in resend_domain else ""
+    if from_addr and resend_domain_only and from_addr.endswith("@" + resend_domain_only):
+        sender = f"{from_label} <{from_addr}>"
+    else:
+        sender = f"{from_label} <{resend_domain}>"
     params: dict = {
-        "from": f"{from_label} <{from_email}>" if "<" not in from_email else from_email,
+        "from": sender,
         "to": [to_addr],
         "subject": subject,
         "html": html,
@@ -278,7 +286,7 @@ def enviar_reporte_iva(
     )
 
     if os.getenv("RESEND_API_KEY"):
-        _send_resend(to_email, subject, html, plain, estudio_nombre)
+        _send_resend(to_email, subject, html, plain, estudio_nombre, from_addr=from_email)
     else:
         if not smtp_password:
             raise ValueError("El estudio no tiene contraseña SMTP configurada")
@@ -305,7 +313,7 @@ def enviar_email_generico(
 ) -> None:
     """Envía un email genérico (resumen al admin)."""
     if os.getenv("RESEND_API_KEY"):
-        _send_resend(to_email, subject, html, plain, estudio_nombre)
+        _send_resend(to_email, subject, html, plain, estudio_nombre, from_addr=from_email)
     else:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
@@ -335,6 +343,7 @@ def enviar_email_con_adjunto(
         import base64
         _send_resend(
             to_email, subject, html, plain, estudio_nombre,
+            from_addr=from_email,
             attachments=[{
                 "filename": adjunto_nombre,
                 "content": list(adjunto_bytes),
